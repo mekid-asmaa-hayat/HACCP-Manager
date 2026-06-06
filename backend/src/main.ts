@@ -12,9 +12,12 @@ async function bootstrap() {
     forbidNonWhitelisted: false,
     transform: true,
   }));
-
-  app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    app.enableCors({
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3002',
+      'https://haccp-manager-frontend.onrender.com',
+    ],
     credentials: true,
   });
 
