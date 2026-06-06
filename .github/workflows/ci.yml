@@ -1,0 +1,130 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend-test:
+    name: Backend — Lint & Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: haccp
+          POSTGRES_PASSWORD: haccp_secret
+          POSTGRES_DB: haccpmanager_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Lint
+        working-directory: ./backend
+        run: npm run lint
+
+      - name: Unit tests
+        working-directory: ./backend
+        env:
+          DATABASE_URL: postgresql://haccp:haccp_secret@localhost:5432/haccpmanager_test
+          JWT_SECRET: test_secret
+          JWT_REFRESH_SECRET: test_refresh_secret
+        run: npm run test -- --coverage
+
+      - name: E2E tests
+        working-directory: ./backend
+        env:
+          DATABASE_URL: postgresql://haccp:haccp_secret@localhost:5432/haccpmanager_test
+          JWT_SECRET: test_secret
+          JWT_REFRESH_SECRET: test_refresh_secret
+        run: npm run test:e2e
+
+  frontend-test:
+    name: Frontend — Lint, Build & Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Lint
+        working-directory: ./frontend
+        run: npm run lint
+
+      - name: Type check
+        working-directory: ./frontend
+        run: npm run type-check
+
+      - name: Tests
+        working-directory: ./frontend
+        run: npm test -- --watchAll=false --coverage
+
+      - name: Build
+        working-directory: ./frontend
+        env:
+          REACT_APP_API_URL: https://api.haccpmanager.app
+        run: npm run build
+
+  docker-build:
+    name: Docker — Build Images
+    runs-on: ubuntu-latest
+    needs: [backend-test, frontend-test]
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build backend image
+        run: docker build -t haccpmanager-backend ./backend
+
+      - name: Build frontend image
+        run: docker build -t haccpmanager-frontend ./frontend
+
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: docker-build
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy backend to Railway
+        run: echo "Deploy backend → Railway"
+        # env:
+        #   RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Deploy frontend to Vercel
+        run: echo "Deploy frontend → Vercel"
+        # env:
+        #   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
