@@ -32,10 +32,6 @@
 
 ## 📸 Captures d'écran
 
-### Page de connexion
-
-![Login](Screenshots/Login-Page.png)
-
 ### Tableau de bord — KPIs & conformité temps réel
 
 ![Dashboard](Screenshots/Dashboard.png)
@@ -50,11 +46,15 @@
 
 ### Contrôles HACCP — Réception
 
-![Contrôles Réception](Screenshots/Controles%20HACCP-Reception.png)
+![Contrôles Réception](Screenshots/Controles-HACCP-Reception.png)
 
 ### Import de produits (CSV)
 
 ![Import Produits](Screenshots/Import-produit-Marc-Bernard.png)
+
+### Page de connexion
+
+![Login](Screenshots/Login-Page.png)
 
 ### Gestion des utilisateurs & contrôles (API)
 
